@@ -7,6 +7,7 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   static Future<void> initialize() async {
+    // Timezone
     tz.initializeTimeZones();
     tz.setLocalLocation(tz.local);
 
@@ -14,21 +15,22 @@ class NotificationService {
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const settings = InitializationSettings(android: androidSettings);
+
     await _notifications.initialize(settings);
 
     final androidPlugin =
         _notifications.resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>();
 
+    // ✅ Permiso de notificaciones (Android 13+)
     await androidPlugin?.requestNotificationsPermission();
 
+    // ✅ Canal (NO recrearlo cada vez con otro ID)
     const channel = AndroidNotificationChannel(
-      'reminders_channel_PROD',
+      'reminders_channel', // ⬅ ID SIMPLE Y ESTABLE
       'Recordatorios',
       description: 'Recordatorios del diario',
       importance: Importance.high,
-      playSound: true,
-      enableVibration: true,
     );
 
     await androidPlugin?.createNotificationChannel(channel);
@@ -44,14 +46,13 @@ class NotificationService {
       'Recordatorio 📝',
       text,
       tz.TZDateTime.from(dateTime, tz.local),
-      NotificationDetails(
+      const NotificationDetails(
         android: AndroidNotificationDetails(
-          'reminders_channel_PROD',
+          'reminders_channel', // ⬅ MISMO ID
           'Recordatorios',
           importance: Importance.high,
           priority: Priority.high,
           playSound: true,
-          sound: RawResourceAndroidNotificationSound('default'),
           enableVibration: true,
         ),
       ),
@@ -61,5 +62,3 @@ class NotificationService {
     );
   }
 }
-
-
