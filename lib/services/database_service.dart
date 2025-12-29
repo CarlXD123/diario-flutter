@@ -27,7 +27,7 @@ class DatabaseService {
       _database = await openDatabase(
         path,
         password: key,
-        version: 3,
+        version: 4,
         onCreate: (db, version) async {
           await db.execute('''
             CREATE TABLE entradas (
@@ -41,6 +41,17 @@ class DatabaseService {
 
           await db.execute('CREATE INDEX idx_fecha ON entradas(fecha)');
           await db.execute('CREATE INDEX idx_pin ON entradas(pin)');
+
+          await db.execute('''
+            CREATE TABLE reminders (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              text TEXT NOT NULL,
+              scheduled_at INTEGER NOT NULL
+            )
+          ''');
+
+          await db.execute('CREATE INDEX idx_reminder_date ON reminders(scheduled_at)');
+
         },
         onUpgrade: (db, oldVersion, newVersion) async {
           if (kDebugMode) {
@@ -52,6 +63,24 @@ class DatabaseService {
           if (!existePin) {
             await db.execute('ALTER TABLE entradas ADD COLUMN pin TEXT');
           }
+
+          //TABLA REMINDERS
+          final tables = await db.rawQuery(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='reminders'"
+          );
+
+          if (tables.isEmpty) {
+            await db.execute('''
+              CREATE TABLE reminders (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                text TEXT NOT NULL,
+                scheduled_at INTEGER NOT NULL
+              )
+            ''');
+
+            await db.execute('CREATE INDEX idx_reminder_date ON reminders(scheduled_at)');
+          }
+
         },
       );
 
@@ -86,9 +115,9 @@ class DatabaseService {
     return sha256.convert(utf8.encode(pin)).toString();
   }
 
-  static Future<void> insertEntrada(String emoji, String nota) async {
-    if (emoji.isEmpty || nota.isEmpty) return;
-
+  static Future<void> insertEntrada(String? emoji, String nota) async {
+    if (nota.trim().isEmpty) return;
+    
     try {
       final database = await db();
       await database.insert(
@@ -198,4 +227,40 @@ class DatabaseService {
     }
     return null;
   }
+
+  // ======================
+  // RECORDATORIOS
+  // ======================
+
+  static Future<int> insertReminder(
+    String text,
+    DateTime dateTime,
+  ) async {
+    final database = await db();
+    return await database.insert(
+      'reminders',
+      {
+        'text': text,
+        'scheduled_at': dateTime.millisecondsSinceEpoch,
+      },
+    );
+  }
+
+  static Future<List<Map<String, dynamic>>> getReminders() async {
+    final database = await db();
+    return await database.query(
+      'reminders',
+      orderBy: 'scheduled_at ASC',
+    );
+  }
+
+  static Future<void> deleteReminder(int id) async {
+    final database = await db();
+    await database.delete(
+      'reminders',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
 }

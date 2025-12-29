@@ -46,7 +46,13 @@ class EntradaCard extends StatelessWidget {
                     fit: BoxFit.cover,
                   ),
                 )
-              : Text(entrada['emoji'], style: TextStyle(fontSize: 30)),
+              : entrada['emoji'] != null && entrada['emoji'].toString().isNotEmpty
+                ? Text(
+                    entrada['emoji'],
+                    style: const TextStyle(fontSize: 30),
+                  )
+                : const SizedBox.shrink(),
+
           title: Text(
             entrada['nota'].length > 2 ? '${entrada['nota'].substring(0, 2)}...' : entrada['nota'],
           ),

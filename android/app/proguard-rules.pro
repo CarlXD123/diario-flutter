@@ -1,16 +1,27 @@
-# Mantener clases de Google Ads
+# --------------------
+# Google Ads
+# --------------------
 -keep class com.google.android.gms.ads.** { *; }
 -keep interface com.google.android.gms.ads.** { *; }
-
-# Mantener clases necesarias de Google Play Services
--keep class com.google.android.gms.** { *; }
--keep interface com.google.android.gms.** { *; }
-
-# Mantener clases usadas por Google Ads SDK
 -keep class com.google.ads.** { *; }
 
-# Evita remover clases con anotaciones necesarias
--keepattributes *Annotation*
-
+# --------------------
+# SQLCipher / SQLite
+# --------------------
 -keep class net.sqlcipher.** { *; }
+-keep class org.sqlite.** { *; }
+-keep class androidx.sqlite.** { *; }
+
 -dontwarn net.sqlcipher.**
+-dontwarn org.sqlite.**
+
+# --------------------
+# Flutter
+# --------------------
+-keep class io.flutter.plugins.** { *; }
+-keep class io.flutter.embedding.** { *; }
+
+# --------------------
+# Annotations
+# --------------------
+-keepattributes *Annotation*

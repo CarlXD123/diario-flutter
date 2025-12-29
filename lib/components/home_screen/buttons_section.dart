@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../screens/paint.dart';
 import '../../screens/list_view.dart';
-import '../../screens/bluetooth_chat_screen.dart';
+import '../../services/permissions_helper.dart';
+import '../../screens/nearby_chat_screen.dart';
 
 class ButtonsSection extends StatelessWidget {
   final VoidCallback onSeleccionarImagen;
@@ -32,19 +33,27 @@ class ButtonsSection extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         ElevatedButton.icon(
-          onPressed: () {
+          onPressed: () async {
+            final permitido = await PermissionsHelper.checkAndRequest(context);
+
+            if (!permitido) return; // NO entra al chat
+
+            if (!context.mounted) return;
+
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => BluetoothChatScreen()),
+              MaterialPageRoute(builder: (_) => NearbyChatScreen()),
             );
           },
-          icon: Icon(Icons.bluetooth),
-          label: Text("📡 Chat por Bluetooth"),
+          icon: const Icon(Icons.bluetooth),
+          label: const Text("📡 Chat por Bluetooth"),
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue,
-            padding: EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
           ),
         ),
+
+
         const SizedBox(height: 10),
         ElevatedButton.icon(
           onPressed: () {

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import '../screens/reminders_screen.dart';
+import '../screens/add_reminder_screen.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
-
 import '../services/database_service.dart';
 import '../components/home_screen/color_picker_section.dart';
 import '../components/home_screen/image_preview_section.dart';
@@ -23,7 +24,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _cargarBanner();
   }
 
   Future<void> seleccionarImagen() async {
@@ -36,10 +36,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void guardarEntrada() async {
-    if (imagenSeleccionada == null || _notaController.text.trim().isEmpty) {
+    if (_notaController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text("😕 Selecciona una imagen y escribe algo"),
+          content: Text("✍️ Escribe algo para guardar tu recuerdo"),
           backgroundColor: Colors.redAccent,
           duration: Duration(seconds: 2),
         ),
@@ -48,7 +48,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     await DatabaseService.insertEntrada(
-      imagenSeleccionada!.path,
+      imagenSeleccionada?.path, // 👈 ahora puede ser null
       _notaController.text.trim(),
     );
 
@@ -70,7 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ],
         ),
-        backgroundColor: Colors.teal.shade600,
+        backgroundColor: Colors.teal,
         duration: Duration(seconds: 3),
         behavior: SnackBarBehavior.floating,
         margin: EdgeInsets.symmetric(horizontal: 20, vertical: 16),
@@ -87,25 +87,21 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  void _cargarBanner() {
-    _bannerAd = BannerAd(
-      adUnitId: 'ca-app-pub-3940256099942544/9214589741',
-      size: AdSize.banner,
-      request: AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (Ad ad) => setState(() {}),
-        onAdFailedToLoad: (Ad ad, LoadAdError error) {
-          ad.dispose();
-          print('❌ Error al cargar el banner: $error');
-        },
-      ),
-    )..load();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text("¿Cómo te sientes hoy?")),
+      floatingActionButton: FloatingActionButton(
+        child: const Icon(Icons.alarm),
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => AddReminderScreen(),
+            ),
+          );
+        },
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -123,10 +119,16 @@ class _HomeScreenState extends State<HomeScreen> {
               controller: _notaController,
               maxLines: 4,
               decoration: InputDecoration(
-                border: OutlineInputBorder(),
-                labelText: 'Escribe algo...',
-                hintText: 'Ingresa tu pensamiento',
-              ),
+                filled: true,
+                fillColor: Colors.grey.shade100,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
+                ),
+                labelText: 'Tu pensamiento',
+                hintText: '¿Qué pasó hoy?',
+              )
+
             ),
             const SizedBox(height: 20),
             ElevatedButton.icon(
@@ -137,6 +139,24 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
               ),
             ),
+
+            const SizedBox(height: 16), // 👈 salto de línea / espacio
+            
+            ElevatedButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => RemindersScreen()),
+                );
+              },
+              icon: const Icon(Icons.alarm),
+              label: const Text("Recordatorios"),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                backgroundColor: Colors.deepPurple,
+              ),
+            ),
+
           ],
         ),
       ),
