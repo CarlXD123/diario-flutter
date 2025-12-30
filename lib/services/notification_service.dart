@@ -48,7 +48,7 @@ class NotificationService {
       tz.TZDateTime.from(dateTime, tz.local),
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'reminders_channel', // ⬅ MISMO ID
+          'reminders_channel_PROD', // ⬅ MISMO ID
           'Recordatorios',
           importance: Importance.high,
           priority: Priority.high,
@@ -60,5 +60,10 @@ class NotificationService {
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
     );
+  }
+
+   // 👇 ESTE ES EL NUEVO
+  static Future<void> cancelReminder(int id) async {
+    await _notifications.cancel(id);
   }
 }
