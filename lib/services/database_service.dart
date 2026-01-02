@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
+
 import 'package:flutter/foundation.dart';
 import 'package:sqflite_sqlcipher/sqflite.dart';
 import 'package:path/path.dart';
@@ -14,84 +15,81 @@ class DatabaseService {
 
   // Inicializar o abrir la base de datos
   static Future<Database> initDB() async {
-    try {
-      final path = join(await getDatabasesPath(), _dbName);
-      final storage = SecureStorageService();
+    final path = join(await getDatabasesPath(), _dbName);
+    final storage = SecureStorageService();
 
-      String? key = await storage.getKey();
-      if (key == null) {
-        key = _generateSecureKey(32);
-        await storage.saveKey(key);
-      }
+    final dbExists = await databaseExists(path);
+    String? key = await storage.getKey();
 
-      _database = await openDatabase(
-        path,
-        password: key,
-        version: 4,
-        onCreate: (db, version) async {
-          await db.execute('''
-            CREATE TABLE entradas (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              fecha TEXT,
-              emoji TEXT,
-              nota TEXT,
-              pin TEXT
-            )
-          ''');
-
-          await db.execute('CREATE INDEX idx_fecha ON entradas(fecha)');
-          await db.execute('CREATE INDEX idx_pin ON entradas(pin)');
-
-          await db.execute('''
-            CREATE TABLE reminders (
-              id INTEGER PRIMARY KEY AUTOINCREMENT,
-              text TEXT NOT NULL,
-              scheduled_at INTEGER NOT NULL
-            )
-          ''');
-
-          await db.execute('CREATE INDEX idx_reminder_date ON reminders(scheduled_at)');
-
-        },
-        onUpgrade: (db, oldVersion, newVersion) async {
-          if (kDebugMode) {
-            print('🛠 Migrando de $oldVersion a $newVersion');
-          }
-
-          final columnas = await db.rawQuery('PRAGMA table_info(entradas)');
-          final existePin = columnas.any((col) => col['name'] == 'pin');
-          if (!existePin) {
-            await db.execute('ALTER TABLE entradas ADD COLUMN pin TEXT');
-          }
-
-          //TABLA REMINDERS
-          final tables = await db.rawQuery(
-            "SELECT name FROM sqlite_master WHERE type='table' AND name='reminders'"
-          );
-
-          if (tables.isEmpty) {
-            await db.execute('''
-              CREATE TABLE reminders (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                text TEXT NOT NULL,
-                scheduled_at INTEGER NOT NULL
-              )
-            ''');
-
-            await db.execute('CREATE INDEX idx_reminder_date ON reminders(scheduled_at)');
-          }
-
-        },
-      );
-
-      return _database!;
-    } catch (e) {
+    // 🚨 CASO CRÍTICO: hay clave pero no hay DB → CLAVE HUÉRFANA
+    if (key != null && !dbExists) {
       if (kDebugMode) {
-        print('❌ Error inicializando base de datos: $e');
+        print('⚠️ Clave huérfana detectada. Reset seguro.');
       }
-      rethrow;
+      await storage.deleteKey();
+      key = null;
+    }
+
+    // Crear clave si no existe
+    if (key == null) {
+      key = _generateSecureKey(32);
+      await storage.saveKey(key);
+    }
+
+    // Abrir o crear DB
+    return await openDatabase(
+      path,
+      password: key,
+      version: 4,
+      onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
+    );
+  }
+
+  // Separar onCreate y onUpgrade para limpieza
+  static Future<void> _onCreate(Database db, int version) async {
+    await db.execute('''
+      CREATE TABLE entradas (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        fecha TEXT,
+        emoji TEXT,
+        nota TEXT,
+        pin TEXT
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_fecha ON entradas(fecha)');
+    await db.execute('CREATE INDEX idx_pin ON entradas(pin)');
+
+    await db.execute('''
+      CREATE TABLE reminders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        text TEXT NOT NULL,
+        scheduled_at INTEGER NOT NULL
+      )
+    ''');
+    await db.execute('CREATE INDEX idx_reminder_date ON reminders(scheduled_at)');
+  }
+
+  static Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    final columnas = await db.rawQuery('PRAGMA table_info(entradas)');
+    final existePin = columnas.any((col) => col['name'] == 'pin');
+    if (!existePin) await db.execute('ALTER TABLE entradas ADD COLUMN pin TEXT');
+
+    final tables = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='reminders'"
+    );
+    if (tables.isEmpty) {
+      await db.execute('''
+        CREATE TABLE reminders (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          text TEXT NOT NULL,
+          scheduled_at INTEGER NOT NULL
+        )
+      ''');
+      await db.execute('CREATE INDEX idx_reminder_date ON reminders(scheduled_at)');
     }
   }
+
 
   static Future<Database> db() async {
     if (_database != null) return _database!;

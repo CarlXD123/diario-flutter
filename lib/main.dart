@@ -6,9 +6,10 @@ import 'services/database_service.dart';
 import 'services/notification_service.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // 🚀 ARRANCA LA UI INMEDIATAMENTE
   runApp(
     ChangeNotifierProvider(
       create: (_) => ThemeProvider(),
@@ -16,17 +17,30 @@ void main() {
     ),
   );
 
-  _postInit();
+  // 🔒 Inicializaciones SEGURAS (no bloquean la UI)
+  _safeInit();
 }
 
-Future<void> _postInit() async {
+Future<void> _safeInit() async {
   try {
     await NotificationService.initialize();
+  } catch (e, s) {
+    debugPrint('❌ Error NotificationService: $e');
+    debugPrintStack(stackTrace: s);
+  }
+
+  try {
     await DatabaseService.initDB();
+  } catch (e, s) {
+    debugPrint('❌ Error DatabaseService: $e');
+    debugPrintStack(stackTrace: s);
+  }
+
+  try {
     await MobileAds.instance.initialize();
-  } catch (e, stack) {
-    debugPrint("❌ Error post-init: $e");
-    debugPrintStack(stackTrace: stack);
+  } catch (e, s) {
+    debugPrint('❌ Error MobileAds: $e');
+    debugPrintStack(stackTrace: s);
   }
 }
 

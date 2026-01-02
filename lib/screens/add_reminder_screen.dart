@@ -38,49 +38,78 @@ class _AddReminderScreenState extends State<AddReminderScreen> {
   }
 
   Future<void> _saveReminder() async {
-    if (_textController.text.trim().isEmpty ||
-        _selectedDate == null ||
-        _selectedTime == null) {
+    void log(String msg) {
+      debugPrint('🧪 [REMINDER] $msg');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Completa todos los campos')),
+        SnackBar(
+          content: Text(msg),
+          duration: const Duration(seconds: 1),
+        ),
       );
-      return;
     }
 
-    final dateTime = DateTime(
-      _selectedDate!.year,
-      _selectedDate!.month,
-      _selectedDate!.day,
-      _selectedTime!.hour,
-      _selectedTime!.minute,
-    );
+    try {
+      log('Botón guardar presionado');
 
-    if (dateTime.isBefore(DateTime.now())) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La fecha debe ser futura')),
+      if (_textController.text.trim().isEmpty ||
+          _selectedDate == null ||
+          _selectedTime == null) {
+        log('Campos incompletos');
+        return;
+      }
+
+      final dateTime = DateTime(
+        _selectedDate!.year,
+        _selectedDate!.month,
+        _selectedDate!.day,
+        _selectedTime!.hour,
+        _selectedTime!.minute,
       );
-      return;
+
+      log('Fecha creada: $dateTime');
+
+      if (dateTime.isBefore(DateTime.now())) {
+        log('Fecha en el pasado');
+        return;
+      }
+
+      // 🟡 PEDIR PERMISO AQUÍ (SOLO CUANDO REALMENTE SE NECESITA)
+      final granted =
+          await NotificationService.requestPermissionIfNeeded();
+
+      if (!granted) {
+        log('Permiso de notificaciones DENEGADO');
+        return;
+      }
+
+      final id = await DatabaseService.insertReminder(
+        _textController.text.trim(),
+        dateTime,
+      );
+
+      log('Programando notificación...');
+      await NotificationService.scheduleReminder(
+        id: id,
+        text: _textController.text.trim(),
+        dateTime: dateTime,
+      );
+
+      log('Notificación programada correctamente');
+
+      await Future.delayed(const Duration(milliseconds: 600));
+      Navigator.pop(context, true);
+    } catch (e, stack) {
+      debugPrint('❌ ERROR AL GUARDAR RECORDATORIO: $e');
+      debugPrintStack(stackTrace: stack);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('ERROR: $e'),
+          duration: const Duration(seconds: 3),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
-
-    final id = await DatabaseService.insertReminder(
-      _textController.text.trim(),
-      dateTime,
-    );
-
-  
-    await NotificationService.scheduleReminder(
-      id: id,
-      text: _textController.text.trim(),
-      dateTime: dateTime,
-    );
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Recordatorio guardado 🕒')),
-    );
-
-    await Future.delayed(const Duration(milliseconds: 600));
-    
-    Navigator.pop(context, true);
   }
 
   @override

@@ -21,6 +21,11 @@ class ThemeProvider extends ChangeNotifier {
           foregroundColor: Colors.white,
         ),
 
+        // 🟣 DRAWER (AQUÍ ESTÁ LA MAGIA)
+        drawerTheme: DrawerThemeData(
+          backgroundColor: _customColor,
+        ),
+
         // Botones elevados
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(

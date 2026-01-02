@@ -23,7 +23,7 @@ class NotificationService {
             AndroidFlutterLocalNotificationsPlugin>();
 
     // ✅ Permiso de notificaciones (Android 13+)
-    await androidPlugin?.requestNotificationsPermission();
+    //await androidPlugin?.requestNotificationsPermission();
 
     // ✅ Canal (NO recrearlo cada vez con otro ID)
     const channel = AndroidNotificationChannel(
@@ -48,7 +48,7 @@ class NotificationService {
       tz.TZDateTime.from(dateTime, tz.local),
       const NotificationDetails(
         android: AndroidNotificationDetails(
-          'reminders_channel_PROD', // ⬅ MISMO ID
+          'reminders_channel', // ⬅ MISMO ID
           'Recordatorios',
           importance: Importance.high,
           priority: Priority.high,
@@ -65,5 +65,22 @@ class NotificationService {
    // 👇 ESTE ES EL NUEVO
   static Future<void> cancelReminder(int id) async {
     await _notifications.cancel(id);
+  }
+
+  static Future<bool> requestPermissionIfNeeded() async {
+    final androidPlugin =
+        _notifications.resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    if (androidPlugin == null) return false;
+
+    final bool enabled =
+        await androidPlugin.areNotificationsEnabled() ?? false;
+
+    if (!enabled) {
+      return await androidPlugin.requestNotificationsPermission() ?? false;
+    }
+
+    return true;
   }
 }

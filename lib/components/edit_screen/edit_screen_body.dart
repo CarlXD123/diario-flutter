@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import '../../services/database_service.dart';
 import 'ad_helper.dart';
@@ -53,8 +54,17 @@ class _EditScreenBodyState extends State<EditScreenBody> {
   }
 
   void _generarPDF() async {
-    await PDFGenerator.generate(widget.entrada, _contenidoController.text, context);
+    final file = await PDFGenerator.generate(
+      widget.entrada,
+      _contenidoController.text,
+    );
+
+    if (!mounted) return;
+
+    await OpenFilex.open(file.path);
   }
+
+
 
   void _protegerEntrada() {
     PinDialogs.protegerEntrada(context, widget.entrada);

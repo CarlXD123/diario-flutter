@@ -15,4 +15,9 @@ class SecureStorageService {
   Future<bool> hasKey() async {
     return (await getKey()) != null;
   }
+
+   // ✅ Agregar este método
+  Future<void> deleteKey() async {
+    await _storage.delete(key: _keyName);
+  }
 }
