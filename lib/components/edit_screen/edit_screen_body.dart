@@ -1,15 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:open_filex/open_filex.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:flutter/foundation.dart';
 import '../../services/database_service.dart';
 import 'ad_helper.dart';
 import 'pdf_generator.dart';
 import 'pin_dialogs.dart';
 import 'emoji_preview.dart';
 
+/// 🔹 Función top-level para generar PDF en isolate
+Future<String> generatePdfInBackground(Map<String, dynamic> params) async {
+  final entrada = Map<String, dynamic>.from(params['entrada']); // asegurar serializable
+  final contenido = params['contenido'] as String;
+
+  // Aquí podrías optimizar imágenes si quieres
+  // ej: entrada['emoji'] = await resizeImage(File(entrada['emoji']).readAsBytes(), 128, 128);
+
+  final file = await PDFGenerator.generate(entrada, contenido);
+  return file.path;
+}
+
 class EditScreenBody extends StatefulWidget {
   final Map<String, dynamic> entrada;
-
   const EditScreenBody({super.key, required this.entrada});
 
   @override
@@ -25,6 +37,10 @@ class _EditScreenBodyState extends State<EditScreenBody> {
   void initState() {
     super.initState();
     _contenidoController = TextEditingController(text: widget.entrada['nota']);
+    _loadRewardedAd();
+  }
+
+  void _loadRewardedAd() {
     AdHelper.loadRewardedAd(onAdLoaded: (ad) {
       _rewardedAd = ad;
       _isAdReady = true;
@@ -53,18 +69,31 @@ class _EditScreenBodyState extends State<EditScreenBody> {
     Navigator.pop(context, true);
   }
 
-  void _generarPDF() async {
-    final file = await PDFGenerator.generate(
-      widget.entrada,
-      _contenidoController.text,
+  Future<void> _generarPDF() async {
+    // Mostrar loader
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
     );
 
-    if (!mounted) return;
+    try {
+      // Llamada directa, SIN compute
+      final file = await PDFGenerator.generate(widget.entrada, _contenidoController.text);
 
-    await OpenFilex.open(file.path);
+      if (!mounted) return;
+
+      // Pequeño delay para Android
+      await Future.delayed(const Duration(milliseconds: 500));
+      Navigator.pop(context); // cerrar loader
+      await OpenFilex.open(file.path);
+    } catch (e) {
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error al generar PDF: $e")),
+      );
+    }
   }
-
-
 
   void _protegerEntrada() {
     PinDialogs.protegerEntrada(context, widget.entrada);
@@ -124,14 +153,7 @@ class _EditScreenBodyState extends State<EditScreenBody> {
                                   _rewardedAd?.show(
                                     onUserEarnedReward: (ad, reward) => _generarPDF(),
                                   );
-                                  AdHelper.loadRewardedAd(onAdLoaded: (ad) {
-                                    _rewardedAd = ad;
-                                    _isAdReady = true;
-                                    setState(() {});
-                                  }, onAdFailed: () {
-                                    _isAdReady = false;
-                                    setState(() {});
-                                  });
+                                  _loadRewardedAd();
                                 }
                               : null,
                           Colors.deepPurple,
