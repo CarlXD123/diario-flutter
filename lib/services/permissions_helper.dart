@@ -21,14 +21,20 @@ class PermissionsHelper {
         content: const Text(
           "Para comunicarte con dispositivos cercanos, "
           "esta función necesita acceso a Bluetooth y Wi-Fi.\n\n"
-          "👉 No usamos Internet\n"
-          "👉 No guardamos tu ubicación\n"
-          "👉 Todo funciona localmente"
+
+          "🔹 Cómo usar la conexión:\n"
+          "• 📡 Esperar conexion: Mantén este dispositivo esperando una conexión\n"
+          "• 🔍 Buscar conexion: Busca dispositivos cercanos para conectarte\n\n"
+
+          "🔒 Privacidad:\n"
+          "• No usamos Internet\n"
+          "• No guardamos tu ubicación\n"
+          "• Todo funciona localmente"
         ),
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.pop(context, false); // ❌ Cancelar
+              Navigator.pop(context, false);
             },
             child: const Text("Cancelar"),
           ),
@@ -36,14 +42,13 @@ class PermissionsHelper {
             onPressed: () async {
               await requestNearbyPermissions();
               await prefs.setBool(_key, true);
-              Navigator.pop(context, true); // ✅ Aceptar
+              Navigator.pop(context, true);
             },
             child: const Text("Continuar"),
           ),
         ],
       ),
     );
-
     return resultado ?? false;
   }
 }

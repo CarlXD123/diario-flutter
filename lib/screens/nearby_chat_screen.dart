@@ -25,12 +25,12 @@ class _NearbyChatScreenState extends State<NearbyChatScreen> {
 
   void _startAdvertising() async {
     await NearbyService.advertise();
-    _addSystem("📡 Publicando (advertising)...");
+    _addSystem("📡 Preparando conexión...");
   }
 
   void _startDiscovery() async {
     await NearbyService.discover();
-    _addSystem("🔍 Buscando dispositivos...");
+    _addSystem("🔍 Preparando búsqueda...");
   }
 
   void _send() async {

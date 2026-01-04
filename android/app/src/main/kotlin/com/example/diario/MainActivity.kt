@@ -1,4 +1,4 @@
-package com.example.diario
+package com.carlos.diarioprivado
 
 import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity
@@ -53,7 +53,7 @@ class MainActivity : FlutterActivity() {
             connectionLifecycleCallback,
             options
         ).addOnSuccessListener {
-            sendStatus("📡 Advertising iniciado")
+            sendStatus("📡 Conexión disponible")
         }.addOnFailureListener {
             sendStatus("❌ Error advertising: ${it.message}")
         }
@@ -70,7 +70,7 @@ class MainActivity : FlutterActivity() {
             endpointDiscoveryCallback,
             options
         ).addOnSuccessListener {
-            sendStatus("🔍 Discovery iniciado")
+            sendStatus("🔍 Búsqueda activa")
         }.addOnFailureListener {
             sendStatus("❌ Error discovery: ${it.message}")
         }
